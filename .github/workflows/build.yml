@@ -1,0 +1,35 @@
+name: Build APK
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          pip install buildozer cython==0.29.36
+
+      - name: Configure and Build APK
+        run: |
+          buildozer init
+          sed -i 's/^title = .*/title = Підготовка до заліку/' buildozer.spec
+          sed -i 's/^source.include_exts = .*/source.include_exts = py,png,jpg,jpeg,webp,kv,atlas/' buildozer.spec
+          sed -i 's/^requirements = .*/requirements = python3,kivy/' buildozer.spec
+          sed -i 's|^#icon.filename = .*|icon.filename = %(source.dir)s/icon.png|' buildozer.spec
+          sed -i 's/^#android.ndk = .*/android.ndk = 25b/' buildozer.spec
+          yes | buildozer -v android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: zalik-apk
+          path: bin/*.apk
